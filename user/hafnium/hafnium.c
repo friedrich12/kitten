@@ -23,9 +23,11 @@
 
 #include "hafnium.h"
 
-
-
-
+struct op {
+    size_t msglen;
+    uint16_t vm_id;
+    char* msg;
+};
 
 
 int
@@ -39,6 +41,7 @@ main(int argc, char ** argv, char * envp[])
 	printf("Hafnium Control Daemon\n");
 
 
+
 	hafnium_fd = open(HAFNIUM_CMD_PATH, O_RDWR);
 
 	if (hafnium_fd < 0) {
@@ -48,11 +51,19 @@ main(int argc, char ** argv, char * envp[])
 
 
 	ret = ioctl(hafnium_fd, HAFNIUM_IOCTL_HYP_INIT, NULL);
-	ret = ioctl(hafnium_fd, HAFNIUM_IOCTL_LAUNCH_VM, 3);
+    /*ret = ioctl(hafnium_fd, HAFNIUM_IOCTL_LAUNCH_VM, 3);
 
 	if (ret != 0) {
 		print("Error launching vm [%d]\n", 3);
-	}
+	}*/
+
+    // Let's try saying hello to linux
+    printf("Sending message to Linux\n");
+    ret = ioctl(hafnium_fd, HAFNIUM_IOCTL_ECHO, NULL);
+
+    if (ret != 0) {
+        print("Error sending message\n");
+    }
 
 	while (1) {
 #if 0

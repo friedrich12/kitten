@@ -31,7 +31,6 @@
 #include <arch/page.h>
 #include <arch/cputype.h>
 
-
 // TODO Brian Needs to have a better location
 #define UART_PHYS_ADDR _AC(CONFIG_SERIAL_PHYS,u)
 //#define UART_PHYS_ADDR _AC(0x1C021000,u)
@@ -246,6 +245,7 @@
 /*
  * Initial memory map attributes.
  */
+ 
 #ifndef CONFIG_SMP
 #define PTE_FLAGS	PTE_TYPE_PAGE | PTE_AF
 #define PMD_FLAGS	PMD_TYPE_SECT | PMD_SECT_AF

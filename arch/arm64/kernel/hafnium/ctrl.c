@@ -23,8 +23,9 @@ static char * options = NULL;
 struct ffa_partition_info * partition_info = NULL;
 
 
-static void           * hf_send_page;
-static void           * hf_recv_page;
+ffa_vm_id_t current_vm_id;
+void           * hf_send_page;
+void           * hf_recv_page;
 
 #if 0
 static atomic64_t       hf_next_port = ATOMIC64_INIT(0);
@@ -108,6 +109,9 @@ __init_hypervisor()
 
 	printk("Setting up Hafnium environment\n");
 
+    current_vm_id = hf_vm_get_id();
+
+    printk("Current VM ID = %d\n", current_vm_id);
 	/* Allocate a page for send and receive buffers. */
 	hf_send_page = kmem_get_pages(0);
 
@@ -323,40 +327,63 @@ fail_unregister_proto:
 #endif
 }
 
-
+struct op {
+    size_t msglen;
+    uint16_t vm_id;
+    char* msg;
+};
 
 static long
 __hafnium_ioctl(struct file   * filp, 
                 unsigned int    ioctl,
-                unsigned long   arg)
+                unsigned long long arg)
 {
     void __user * argp = (void __user *)arg;
     int ret = 0;
 
     printk("Hafnium IOCTL: %d\n", ioctl);
 
+    struct op* op = (struct op*)arg;
+
     switch (ioctl) {
         case HAFNIUM_IOCTL_HYP_INIT:
+        {
             ret = __init_hypervisor();
             break;
+        }
         case HAFNIUM_IOCTL_LAUNCH_VM: 
 		{
-			uint16_t vm_id = (uint16_t)arg;
+			uint16_t vm_id = op->vm_id;
 			printk("Launching VM %d\n", vm_id);
 			ret = hf_launch_vm(vm_id);
 
 			break;
 		}
+        case HAFNIUM_IOCTL_ECHO:
+        {
+            printk("Playing echo with Primary VM.\n");
+            ret = hf_echo_test();
+            break;
+        }
+        case HAFNIUM_IOCTL_SEND_MSG:
+        {
+            printk("Sending message to VM.\n");
+            ret = hf_send_message(op->msg, op->msglen, op->vm_id);
+            break;
+        }
+        case HAFNIUM_IOCTL_RECV_MSG:
+        {
+            printk("Recieving message from VM.\n");
+            ret = hf_recv_message(op->msg);
+            break;
+        }
 		default:
             printk(KERN_ERR "\tUnhandled global ctrl cmd: %d\n", ioctl);
             
             return -EINVAL;
     }
 
-
-
     return ret;
-
 }
 
 

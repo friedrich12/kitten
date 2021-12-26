@@ -1,7 +1,7 @@
 #include <lwk/spinlock.h>
 #include <lwk/task.h>
 #include <lwk/sched.h>
-
+#include <arch-arm64/page.h>
 
 #include <arch/hafnium/call.h>
 #include <arch/hafnium/ffa.h>
@@ -67,6 +67,7 @@ ffa_call(struct ffa_value args)
 				  .arg6 = r6,
 				  .arg7 = r7};
 }
+
 
 static void 
 hf_vcpu_sleep(struct hf_vcpu * vcpu)
@@ -144,6 +145,208 @@ hf_handle_wake_up_request(ffa_vm_id_t      vm_id,
 	}
 }
 
+/**
+ * Injects an interrupt into a vCPU of the VM and ensures the vCPU will run to
+ * handle the interrupt.
+ */
+static void 
+hf_interrupt_vm(ffa_vm_id_t vm_id, uint64_t int_id)
+{
+	struct hf_vm *vm = hf_vm_from_id(vm_id);
+	ffa_vcpu_index_t vcpu;
+	int64_t ret;
+
+	if (!vm) {
+		printk("Request to wake up non-existent VM id: %u\n", vm_id);
+		return;
+	}
+
+	/*
+	 * TODO: For now we're picking the first vcpu to interrupt, but
+	 * we want to be smarter.
+	 */
+	vcpu = 0;
+	ret = hf_interrupt_inject(vm_id, vcpu, int_id);
+
+	if (ret == -1) {
+		printk("Failed to inject interrupt %lld to vCPU %d of VM %d",
+			int_id, vcpu, vm_id);
+		return;
+	}
+
+	if (ret != 1) {
+		/* We don't need to wake up the vcpu. */
+		return;
+	}
+
+	hf_handle_wake_up_request(vm_id, vcpu);
+}
+
+/**
+ * Delivers a message to a VM.
+ */
+static void
+hf_deliver_message(ffa_vm_id_t vm_id)
+{
+	struct hf_vm *vm = hf_vm_from_id(vm_id);
+	ffa_vcpu_index_t i;
+
+	if (!vm) {
+		printk("Tried to deliver message to non-existent VM id: %u\n",
+			vm_id);
+		return;
+	}
+
+	/* Try to wake a vCPU that is waiting for a message. */
+	for (i = 0; i < vm->vcpu_count; i++) {
+		if (atomic_read(&vm->vcpu[i].waiting_for_message)) {
+			hf_handle_wake_up_request(vm_id,
+						  vm->vcpu[i].vcpu_index);
+			return;
+		}
+	}
+
+	/* None were waiting for a message so interrupt one. */
+	hf_interrupt_vm(vm_id, HF_MAILBOX_READABLE_INTID);
+}
+
+
+static void 
+swap(uint64_t *a, uint64_t *b)
+{
+	uint64_t t = *a;
+	*a = *b;
+	*b = t;
+}
+
+/**
+ * Sends the message to the sender VM by calling Hafnium. It will also
+ * trigger the wake up of a recipient VM.
+ */
+int 
+hf_echo_test()
+{
+    /* Loop, echo messages back to the sender. */
+    ffa_rx_release();
+
+    for (;;) {
+		struct ffa_value ret;
+
+		/* Receive the packet. */
+		ret = ffa_msg_wait();
+
+        if(ret.func == FFA_MSG_SEND_32){
+            printk("WE GOT A MESSSAGE OF SIZE %d!\n", ffa_msg_send_size(ret));
+
+            char* msg = (char*) hf_recv_page;
+            
+            for(int i = 0; i < ffa_msg_send_size(ret); i++){
+                printk("%c", msg[i]);
+            }
+            printk("\n");
+
+            printk("Kitten Got: %s\n", msg);
+        }
+
+		/* Echo the message back to the sender. */
+		memcpy(hf_send_page, hf_recv_page, ffa_msg_send_size(ret));
+
+		/* Swap the socket's source and destination ports */
+		struct hf_msg_hdr *hdr = (struct hf_msg_hdr *)hf_send_page;
+		swap(&(hdr->src_port), &(hdr->dst_port));
+
+		/* Swap the destination and source ids. */
+		ffa_vm_id_t dst_id = ffa_sender(ret);
+		ffa_vm_id_t src_id = ffa_receiver(ret);
+
+		ffa_rx_release();
+		ffa_msg_send(src_id, dst_id, ffa_msg_send_size(ret), 0);
+	}
+
+	return 0;
+}
+
+/* 
+ * Sends a message to another VM
+ * The Consumer of a buffer owns it when it is full.
+ * The Producer writes to the buffer when it is empty.
+ * See Arm Firmware Framework for Arm A-profile Section Buffer states and ownership
+ * for reference
+ */
+int 
+hf_send_message(char* msg, size_t msglen, ffa_vm_id_t recipient_vm_id)
+{
+
+    /* Copy message to send page */
+    memcpy(hf_send_page, msg, msglen);
+
+    /* Transfer ownership from the consumer to producer */
+    ffa_rx_release();
+
+    /* Send message to VM 
+     * Transfer ownership form the producer to the consumer*/
+    struct ffa_value ret = ffa_msg_send(current_vm_id, recipient_vm_id, msglen, 0);
+
+    if (ret.func == FFA_ERROR_32) {
+        switch (ret.arg2) {
+            case FFA_INVALID_PARAMETERS:
+            {
+                printk("KITTEN failed to send message: Invalid parameters.\n");
+                return -1;
+            }
+            case FFA_NOT_SUPPORTED:
+            {
+                printk("KITTEN failed to send message: Not supported.\n");
+                return -1;
+            }
+            case FFA_DENIED:
+            case FFA_BUSY:
+            default:
+            {
+                printk("KITTEN failed to send message: Resource temporarily unavailable."
+                        "Did you run ffa_rx_release()? \n");
+                return -1;
+            }
+      }
+   }
+
+    return 0;
+}
+
+/*
+ * Recieves a message from this VM and stores in ret_msg. 
+ * This will block unil a message is received.
+ * Right now there is no message queue. Pending messages will be not be able to be 
+ * delivered until the buffer is empty (ownership is transfered from consumer to producer).
+ */
+int 
+hf_recv_message(char* ret_msg)
+{
+    /* Transfer ownership to producer (So they can write to our recv page). */
+    ffa_rx_release();
+
+    for(;;){
+	    struct ffa_value ret;
+
+	    /* Receive the message. */
+	    ret = ffa_msg_wait();
+
+        if(ret.func == FFA_MSG_SEND_32){
+            int ffa_msg_size, copy_size;
+            ffa_msg_size = copy_size = ffa_msg_send_size(ret);
+
+            if(ffa_msg_send_size(ret) > FFA_MSG_PAYLOAD_MAX){
+                printk("Message is too big to be copied cutting.\n");
+                copy_size = FFA_MSG_PAYLOAD_MAX;
+            }
+
+            memcpy(ret_msg, hf_recv_page, copy_size);
+            break;
+        }
+    }
+	return 0;
+}
+
 static int 
 hf_vcpu_thread(void * data)
 {
@@ -156,10 +359,13 @@ hf_vcpu_thread(void * data)
 	while (!kthread_should_stop()) {
 		ffa_vcpu_index_t i;
 
+//        printk("I'M looping baby\n");
 		/*
 		 * We're about to run the vcpu, so we can reset the abort-sleep
 		 * flag.
 		 */
+
+
 		atomic_set(&vcpu->abort_sleep, 0);
 
 		/* Call into Hafnium to run vcpu. */
@@ -178,7 +384,6 @@ hf_vcpu_thread(void * data)
 			if (!kthread_should_stop()) {
 				schedule();
 			}
-
 			break;
 
 		/* WFI. */
@@ -214,16 +419,16 @@ hf_vcpu_thread(void * data)
 						  ffa_vcpu_index(ret));
 			break;
 
-		/* Response available. */
-		/* case FFA_MSG_SEND_32: */
-		/* 	if (ffa_msg_send_receiver(ret) == PRIMARY_VM_ID) { */
-		/* 		hf_handle_message(vcpu->vm, */
-		/* 				  ffa_msg_send_size(ret), */
-		/* 				  page_address(hf_recv_page)); */
-		/* 	} else { */
-		/* 		hf_deliver_message(ffa_msg_send_receiver(ret)); */
-		/* 	} */
-		/* 	break; */
+		/* Response available.*/
+		/*case FFA_MSG_SEND_32:
+            printk("FFA_MSG_SEND_32\n");
+		 	if (ffa_receiver(ret) == HF_PRIMARY_VM_ID) { 
+                //hf_handle_msg();
+		 	} else {
+                // Focus on just sending messaegs for now
+		 		hf_deliver_message(ffa_receiver(ret));
+		 	} 
+		 	break;*/
 
 		/* /\* Notify all waiters. *\/ */
 		/* case FFA_RX_RELEASE_32: */

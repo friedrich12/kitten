@@ -9,6 +9,8 @@
 #include <arch/hafnium/types.h>
 #include <arch/hafnium/ffa.h>
 
+#include "ctrl.h"
+
 #define CONFIG_HAFNIUM_MAX_VMS   (16)
 #define CONFIG_HAFNIUM_MAX_VCPUS (32)
 

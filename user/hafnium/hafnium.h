@@ -10,6 +10,9 @@
 #define HAFNIUM_IOCTL_HYP_INIT      100
 #define HAFNIUM_IOCTL_LAUNCH_VM     101
 #define HAFNIUM_IOCTL_STOP_VM       102
+#define HAFNIUM_IOCTL_ECHO          103                             
+#define HAFNIUM_IOCTL_SEND_MSG      104                             
+#define HAFNIUM_IOCTL_RECV_MSG      105                             
 
 #define HAFNIUM_CMD_PATH "/dev/hafnium"
 

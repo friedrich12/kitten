@@ -6,6 +6,7 @@
 #include <lwk/bootmem.h>
 #include <lwk/task.h>
 #include <lwk/sched.h>
+#include <arch/io.h>
 #include <arch/atomic.h>
 #include <arch/cpu_ops.h>
 
@@ -150,7 +151,30 @@ arch_boot_cpu(unsigned int cpu)
 	 * Boot it!
 	 */
 
-	cpu_ops[cpu]->cpu_boot(cpu);
+	printk("Booting CPU %d \n", cpu);
+
+	printk("Deferencing pointer\n");
+
+	struct cpu_operations val = *cpu_ops[cpu];
+
+	int (*cpu_boot)(unsigned int) = 0xffffffc000082780;
+	printk("DONE deferecning pointer\n");
+
+	cpu_boot(cpu);
+
+	/*printk("MEM TEST\n");
+
+	int*cool = (int*) 0xaf000000;
+
+	*cool = 10000;
+	
+	printk("MEM TEST PASSED\n"); */
+
+	//long *x = (long*) &cpu_boot;
+
+	//long y = *x;
+	
+	//cpu_ops[cpu]->cpu_boot(cpu);;
 }
 
 
