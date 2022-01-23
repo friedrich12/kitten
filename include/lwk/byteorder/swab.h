@@ -2,6 +2,7 @@
 #define _LWK_SWAB_H
 
 #include <lwk/compiler.h>
+#include <lwk/types.h>
 
 /*
  * casts are necessary for constants, because we never know how for sure

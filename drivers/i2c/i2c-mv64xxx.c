@@ -140,7 +140,7 @@ struct mv64xxx_i2c_data {
 	u32			freq_n;
 	struct clk              *clk;
 	struct clk              *reg_clk;
-	wait_queue_head_t	waitq;
+	waitq_t	waitq;
 	spinlock_t		lock;
 	struct i2c_msg		*msg;
 	struct i2c_adapter	adapter;
@@ -260,7 +260,7 @@ mv64xxx_i2c_fsm(struct mv64xxx_i2c_data *drv_data, u32 status)
 				MV64XXX_I2C_STATE_WAITING_FOR_ADDR_2_ACK;
 			break;
 		}
-		fallthrough;
+		// fallthrough
 	case MV64XXX_I2C_STATUS_MAST_WR_ADDR_2_ACK: /* 0xd0 */
 	case MV64XXX_I2C_STATUS_MAST_WR_ACK: /* 0x28 */
 		if ((drv_data->bytes_left == 0)
@@ -291,14 +291,14 @@ mv64xxx_i2c_fsm(struct mv64xxx_i2c_data *drv_data, u32 status)
 				MV64XXX_I2C_STATE_WAITING_FOR_ADDR_2_ACK;
 			break;
 		}
-		fallthrough;
+		// fallthrough
 	case MV64XXX_I2C_STATUS_MAST_RD_ADDR_2_ACK: /* 0xe0 */
 		if (drv_data->bytes_left == 0) {
 			drv_data->action = MV64XXX_I2C_ACTION_SEND_STOP;
 			drv_data->state = MV64XXX_I2C_STATE_IDLE;
 			break;
 		}
-		fallthrough;
+		// fallthrough
 	case MV64XXX_I2C_STATUS_MAST_RD_DATA_ACK: /* 0x50 */
 		if (status != MV64XXX_I2C_STATUS_MAST_RD_DATA_ACK)
 			drv_data->action = MV64XXX_I2C_ACTION_CONTINUE;
@@ -427,7 +427,7 @@ mv64xxx_i2c_do_action(struct mv64xxx_i2c_data *drv_data)
 			"mv64xxx_i2c_do_action: Invalid action: %d\n",
 			drv_data->action);
 		drv_data->rc = -EIO;
-		fallthrough;
+		// fallthrough
 	case MV64XXX_I2C_ACTION_SEND_STOP:
 		drv_data->cntl_bits &= ~MV64XXX_I2C_REG_CONTROL_INTEN;
 		writel(drv_data->cntl_bits | MV64XXX_I2C_REG_CONTROL_STOP,
@@ -718,6 +718,7 @@ mv64xxx_i2c_functionality(struct i2c_adapter *adap)
 	return I2C_FUNC_I2C | I2C_FUNC_10BIT_ADDR | I2C_FUNC_SMBUS_EMUL;
 }
 
+/* Used for sending i2c messages */
 static int
 mv64xxx_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 {
@@ -771,7 +772,6 @@ static const struct i2c_algorithm mv64xxx_i2c_algo = {
 };
 MODULE_DEVICE_TABLE(of, mv64xxx_i2c_of_match_table);*/
 
-#ifdef CONFIG_OF
 static int
 mv64xxx_calc_freq(struct mv64xxx_i2c_data *drv_data,
 		  const int tclk, const int n, const int m)
@@ -810,82 +810,8 @@ static int
 mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
 		  struct device *dev)
 {
-	const struct of_device_id *device;
-	struct device_node *np = dev->of_node;
-	u32 bus_freq, tclk;
-	int rc = 0;
-
-	/* CLK is mandatory when using DT to describe the i2c bus. We
-	 * need to know tclk in order to calculate bus clock
-	 * factors.
-	 */
-	if (!drv_data->clk) {
-		rc = -ENODEV;
-		goto out;
-	}
-	tclk = clk_get_rate(drv_data->clk);
-
-	if (of_property_read_u32(np, "clock-frequency", &bus_freq))
-		bus_freq = I2C_MAX_STANDARD_MODE_FREQ; /* 100kHz by default */
-
-	if (of_device_is_compatible(np, "allwinner,sun4i-a10-i2c") ||
-	    of_device_is_compatible(np, "allwinner,sun6i-a31-i2c"))
-		drv_data->clk_n_base_0 = true;
-
-	if (!mv64xxx_find_baud_factors(drv_data, bus_freq, tclk)) {
-		rc = -EINVAL;
-		goto out;
-	}
-
-	drv_data->rstc = devm_reset_control_get_optional_exclusive(dev, NULL);
-	if (IS_ERR(drv_data->rstc)) {
-		rc = PTR_ERR(drv_data->rstc);
-		goto out;
-	}
-
-	/* Its not yet defined how timeouts will be specified in device tree.
-	 * So hard code the value to 1 second.
-	 */
-	drv_data->adapter.timeout = HZ;
-
-	device = of_match_device(mv64xxx_i2c_of_match_table, dev);
-	if (!device)
-		return -ENODEV;
-
-	memcpy(&drv_data->reg_offsets, device->data, sizeof(drv_data->reg_offsets));
-
-	/*
-	 * For controllers embedded in new SoCs activate the
-	 * Transaction Generator support and the errata fix.
-	 */
-	if (of_device_is_compatible(np, "marvell,mv78230-i2c")) {
-		drv_data->offload_enabled = true;
-		/* The delay is only needed in standard mode (100kHz) */
-		if (bus_freq <= I2C_MAX_STANDARD_MODE_FREQ)
-			drv_data->errata_delay = true;
-	}
-
-	if (of_device_is_compatible(np, "marvell,mv78230-a0-i2c")) {
-		drv_data->offload_enabled = false;
-		/* The delay is only needed in standard mode (100kHz) */
-		if (bus_freq <= I2C_MAX_STANDARD_MODE_FREQ)
-			drv_data->errata_delay = true;
-	}
-
-	if (of_device_is_compatible(np, "allwinner,sun6i-a31-i2c"))
-		drv_data->irq_clear_inverted = true;
-
-out:
-	return rc;
-}
-#else /* CONFIG_OF */
-static int
-mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
-		  struct device *dev)
-{
 	return -ENODEV;
 }
-#endif /* CONFIG_OF */
 
 static int mv64xxx_i2c_init_recovery_info(struct mv64xxx_i2c_data *drv_data,
 					  struct device *dev)
@@ -895,7 +821,7 @@ static int mv64xxx_i2c_init_recovery_info(struct mv64xxx_i2c_data *drv_data,
 	rinfo->pinctrl = devm_pinctrl_get(dev);
 	if (IS_ERR(rinfo->pinctrl)) {
 		if (PTR_ERR(rinfo->pinctrl) == -EPROBE_DEFER)
-			return -EPROBE_DEFER;
+                        return -EPROBE_DEFER;
 		dev_info(dev, "can't get pinctrl, bus recovery not supported\n");
 		return PTR_ERR(rinfo->pinctrl);
 	} else if (!rinfo->pinctrl) {
@@ -935,7 +861,7 @@ mv64xxx_i2c_runtime_resume(struct device *dev)
 static int
 mv64xxx_i2c_probe(/*struct platform_device *pd*/)
 {
-	struct mv64xxx_i2c_data		*drv_data;
+	/*struct mv64xxx_i2c_data		*drv_data;
 	struct mv64xxx_i2c_pdata	*pdata = dev_get_platdata(&pd->dev);
 	int	rc;
 
@@ -955,9 +881,9 @@ mv64xxx_i2c_probe(/*struct platform_device *pd*/)
 		sizeof(drv_data->adapter.name));
 
 	init_waitqueue_head(&drv_data->waitq);
-	spin_lock_init(&drv_data->lock);
+	spin_lock_init(&drv_data->lock);*/
 
-	/* Not all platforms have clocks */
+	/* Not all platforms have clocks 
 	drv_data->clk = devm_clk_get(&pd->dev, NULL);
 	if (IS_ERR(drv_data->clk)) {
 		if (PTR_ERR(drv_data->clk) == -EPROBE_DEFER)
@@ -1021,30 +947,30 @@ mv64xxx_i2c_probe(/*struct platform_device *pd*/)
 		dev_err(&drv_data->adapter.dev,
 			"mv64xxx: Can't add i2c adapter, rc: %d\n", -rc);
 		goto exit_free_irq;
-	}
+	}*/
 
 	return 0;
 
-exit_free_irq:
+/*exit_free_irq:
 	free_irq(drv_data->irq, drv_data);
 exit_disable_pm:
 	pm_runtime_disable(&pd->dev);
 	if (!pm_runtime_status_suspended(&pd->dev))
 		mv64xxx_i2c_runtime_suspend(&pd->dev);
 
-	return rc;
+	return rc;*/
 }
 
 static int
 mv64xxx_i2c_remove(/*struct platform_device *pd*/)
 {
-	struct mv64xxx_i2c_data		*drv_data = platform_get_drvdata(pd);
+	/*struct mv64xxx_i2c_data		*drv_data = platform_get_drvdata(pd);
 
 	i2c_del_adapter(&drv_data->adapter);
 	free_irq(drv_data->irq, drv_data);
 	pm_runtime_disable(&pd->dev);
 	if (!pm_runtime_status_suspended(&pd->dev))
-		mv64xxx_i2c_runtime_suspend(&pd->dev);
+		mv64xxx_i2c_runtime_suspend(&pd->dev);*/
 
 	return 0;
 }
@@ -1052,9 +978,9 @@ mv64xxx_i2c_remove(/*struct platform_device *pd*/)
 static void
 mv64xxx_i2c_shutdown(/*struct platform_device *pd*/)
 {
-	pm_runtime_disable(&pd->dev);
+	/*pm_runtime_disable(&pd->dev);
 	if (!pm_runtime_status_suspended(&pd->dev))
-		mv64xxx_i2c_runtime_suspend(&pd->dev);
+		mv64xxx_i2c_runtime_suspend(&pd->dev);*/
 }
 
 /*
