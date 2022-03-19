@@ -187,7 +187,6 @@
 			reset-names = "ahb";
 			interrupts = <0x0 0x3c 0x4>;
 			max-frequency = <0x8f0d180>;
-			status = "okay";
 			#address-cells = <0x1>;
 			#size-cells = <0x0>;
 			pinctrl-names = "default";
@@ -207,7 +206,6 @@
 			reset-names = "ahb";
 			interrupts = <0x0 0x3d 0x4>;
 			max-frequency = <0x8f0d180>;
-			status = "disabled";
 			#address-cells = <0x1>;
 			#size-cells = <0x0>;
 		};
@@ -221,7 +219,6 @@
 			reset-names = "ahb";
 			interrupts = <0x0 0x3e 0x4>;
 			max-frequency = <0x8f0d180>;
-			status = "okay";
 			#address-cells = <0x1>;
 			#size-cells = <0x0>;
 			pinctrl-names = "default";

@@ -8,10 +8,10 @@ obj-y		:= setup.o memblock.o cpuinfo.o resource.o \
                task.o sched.o maccess.o tlbflush.o signal.o acpi.o \
                bitops.o traps.o ptrace.o \
                entry-fpsimd.o \
-               irqchip.o \
+               irqchip.o  \
                smccc-call.o cpu_ops.o smp.o \
                smp_spin_table.o psci.o reboot.o \
-               topology.o
+               topology.o 
 
 
 

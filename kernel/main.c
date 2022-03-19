@@ -66,7 +66,10 @@ start_kernel()
 	unsigned int timeout;
 	int status;
 
-	/*
+	
+        printk("FRIEDY MADE IT TO KERNEL START\n");
+
+        /*
  	 * Parse the kernel boot command line.
  	 * This is where boot-time configurable variables get set,
  	 * e.g., the ones with param() and DRIVER_PARAM() specifiers.
@@ -204,6 +207,7 @@ start_kernel()
 
 	/*
 	 * Bring up any late init devices.
+         * ON PINE A64-LTS this should bring up the gpio and i2c drivers
 	 */
 	driver_init_by_name( "late", "*" );
 

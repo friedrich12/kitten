@@ -349,6 +349,9 @@ __hafnium_ioctl(struct file   * filp,
         case HAFNIUM_IOCTL_HYP_INIT:
         {
             ret = __init_hypervisor();
+            for(;;){
+                hf_debug_log('a');
+            }
             break;
         }
         case HAFNIUM_IOCTL_LAUNCH_VM: 

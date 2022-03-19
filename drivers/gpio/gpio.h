@@ -11,135 +11,134 @@
 #include <lwk/delay.h>
 #include <lwk/spinlock.h>
 
-#define BGPIOF_BIG_ENDIAN BIT(0)
-#define BGPIOF_UNREADABLE_REG_SET BIT(1) /* reg_set is unreadable */
-#define BGPIOF_UNREADABLE_REG_DIR BIT(2) /* reg_dir is unreadable */
-#define BGPIOF_BIG_ENDIAN_BYTE_ORDER BIT(3)
-#define BGPIOF_READ_OUTPUT_REG_SET BIT(4) /* reg_set stores output value */
-#define BGPIOF_NO_OUTPUT BIT(5)			  /* only input */
-#define BGPIOF_NO_SET_ON_INPUT BIT(6)
-#define GPIO_LINE_DIRECTION_IN 1
-#define GPIO_LINE_DIRECTION_OUT 0
+#define SW_PORT_IO_BASE 0x01c20800
 
 
-struct gpio_chip {
-	const char *		 label;
-	struct gpio_device * gpiodev;
-	struct device *		 parent;
-	struct module *		 owner;
+#define SUNXI_GPIO_A 0
+#define SUNXI_GPIO_B 1
+#define SUNXI_GPIO_C 2
+#define SUNXI_GPIO_D 3
+#define SUNXI_GPIO_E 4
+#define SUNXI_GPIO_F 5
+#define SUNXI_GPIO_G 6
+#define SUNXI_GPIO_H 7
+#define SUNXI_GPIO_I 8
 
-	int (*request)(struct gpio_chip * gc,
-				   unsigned int		  offset);
-	void (*free)(struct gpio_chip * gc,
-				 unsigned int		offset);
-	int (*get_direction)(struct gpio_chip * gc,
-						 unsigned int		offset);
-	int (*direction_input)(struct gpio_chip * gc,
-						   unsigned int		  offset);
-	int (*direction_output)(struct gpio_chip * gc,
-							unsigned int	   offset,
-							int				   value);
-	int (*get)(struct gpio_chip * gc,
-			   unsigned int		  offset);
-	int (*get_multiple)(struct gpio_chip * gc,
-						unsigned long *	   mask,
-						unsigned long *	   bits);
-	void (*set)(struct gpio_chip * gc,
-				unsigned int	   offset,
-				int				   value);
-	void (*set_multiple)(struct gpio_chip * gc,
-						 unsigned long *	mask,
-						 unsigned long *	bits);
-	int (*set_config)(struct gpio_chip * gc,
-					  unsigned int		 offset,
-					  unsigned long		 config);
-	int (*to_irq)(struct gpio_chip * gc,
-				  unsigned int		 offset);
-
-	void (*dbg_show)(struct seq_file *	s,
-					 struct gpio_chip * gc);
-
-	int (*init_valid_mask)(struct gpio_chip * gc,
-						   unsigned long *	  valid_mask,
-						   unsigned int		  ngpios);
-
-	int (*add_pin_ranges)(struct gpio_chip * gc);
-
-	int					 base;
-	u16					 ngpio;
-	u16					 offset;
-	const char * const * names;
-	bool				 can_sleep;
-
-	//#if IS_ENABLED(CONFIG_GPIO_GENERIC)
-	unsigned long (*read_reg)(void __iomem * reg);
-	void (*write_reg)(void __iomem * reg, unsigned long data);
-	bool be_bits;
-	void __iomem * reg_dat;
-	void __iomem * reg_set;
-	void __iomem * reg_clr;
-	void __iomem * reg_dir_out;
-	void __iomem * reg_dir_in;
-	bool		   bgpio_dir_unreadable;
-	int			   bgpio_bits;
-	spinlock_t	   bgpio_lock;
-	unsigned long  bgpio_data;
-	unsigned long  bgpio_dir;
-	//#endif /* CONFIG_GPIO_GENERIC */
-
-#ifdef CONFIG_GPIOLIB_IRQCHIP
-	/*
-	 * With CONFIG_GPIOLIB_IRQCHIP we get an irqchip inside the gpiolib
-	 * to handle IRQs for most practical cases.
-	 */
-
-	/**
-	 * @irq:
-	 *
-	 * Integrates interrupt chip functionality with the GPIO chip. Can be
-	 * used to handle IRQs for most practical cases.
-	 */
-	struct gpio_irq_chip irq;
-#endif /* CONFIG_GPIOLIB_IRQCHIP */
-
-	/**
-	 * @valid_mask:
-	 *
-	 * If not %NULL, holds bitmask of GPIOs which are valid to be used
-	 * from the chip.
-	 */
-	unsigned long * valid_mask;
-
-#if defined(CONFIG_OF_GPIO)
-	/*
-	 * If CONFIG_OF_GPIO is enabled, then all GPIO controllers described in
-	 * the device tree automatically may have an OF translation
-	 */
-
-	/**
-	 * @of_node:
-	 *
-	 * Pointer to a device tree node representing this GPIO controller.
-	 */
-	struct device_node * of_node;
-
-	/**
-	 * @of_gpio_n_cells:
-	 *
-	 * Number of cells used to form the GPIO specifier.
-	 */
-	unsigned int of_gpio_n_cells;
-
-	/**
-	 * @of_xlate:
-	 *
-	 * Callback to translate a device tree GPIO specifier into a chip-
-	 * relative GPIO number and flags.
-	 */
-	int (*of_xlate)(struct gpio_chip *			   gc,
-					const struct of_phandle_args * gpiospec,
-					u32 *						   flags);
-#endif /* CONFIG_OF_GPIO */
+struct sunxi_gpio {
+	unsigned int cfg[4];
+	unsigned int dat;
+	unsigned int drv[2];
+	unsigned int pull[2];
 };
+
+/* gpio interrupt control */
+struct sunxi_gpio_int {
+	unsigned int cfg[3];
+	unsigned int ctl;
+	unsigned int sta;
+	unsigned int deb; /* interrupt debounce */
+};
+
+struct sunxi_gpio_reg {
+	struct sunxi_gpio	  gpio_bank[9];
+	unsigned char		  res[0xbc];
+	struct sunxi_gpio_int gpio_int;
+};
+
+#define GPIO_BANK(pin) ((pin) >> 5)
+#define GPIO_NUM(pin) ((pin)&0x1F)
+
+#define GPIO_CFG_INDEX(pin) (((pin)&0x1F) >> 3)
+#define GPIO_CFG_OFFSET(pin) ((((pin)&0x1F) & 0x7) << 2)
+
+/* GPIO bank sizes */
+#define SUNXI_GPIO_A_NR (32)
+#define SUNXI_GPIO_B_NR (32)
+#define SUNXI_GPIO_C_NR (32)
+#define SUNXI_GPIO_D_NR (32)
+#define SUNXI_GPIO_E_NR (32)
+#define SUNXI_GPIO_F_NR (32)
+#define SUNXI_GPIO_G_NR (32)
+#define SUNXI_GPIO_H_NR (32)
+#define SUNXI_GPIO_I_NR (32)
+
+#define SUNXI_GPIO_NEXT(__gpio) \
+	((__gpio##_START) + (__gpio##_NR) + 0)
+
+enum sunxi_gpio_number {
+	SUNXI_GPIO_A_START = 0,
+	SUNXI_GPIO_B_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_A),
+	SUNXI_GPIO_C_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_B),
+	SUNXI_GPIO_D_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_C),
+	SUNXI_GPIO_E_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_D),
+	SUNXI_GPIO_F_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_E),
+	SUNXI_GPIO_G_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_F),
+	SUNXI_GPIO_H_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_G),
+	SUNXI_GPIO_I_START = SUNXI_GPIO_NEXT(SUNXI_GPIO_H),
+};
+
+/* SUNXI GPIO number definitions */
+#define SUNXI_GPA(_nr) (SUNXI_GPIO_A_START + (_nr))
+#define SUNXI_GPB(_nr) (SUNXI_GPIO_B_START + (_nr))
+#define SUNXI_GPC(_nr) (SUNXI_GPIO_C_START + (_nr))
+#define SUNXI_GPD(_nr) (SUNXI_GPIO_D_START + (_nr))
+#define SUNXI_GPE(_nr) (SUNXI_GPIO_E_START + (_nr))
+#define SUNXI_GPF(_nr) (SUNXI_GPIO_F_START + (_nr))
+#define SUNXI_GPG(_nr) (SUNXI_GPIO_G_START + (_nr))
+#define SUNXI_GPH(_nr) (SUNXI_GPIO_H_START + (_nr))
+#define SUNXI_GPI(_nr) (SUNXI_GPIO_I_START + (_nr))
+
+/* GPIO pin function config */
+#define SUNXI_GPIO_INPUT (0)
+#define SUNXI_GPIO_OUTPUT (1)
+
+#define SUNXI_GPA0_ERXD3 (2)
+#define SUNXI_GPA0_SPI1_CS0 (3)
+#define SUNXI_GPA0_UART2_RTS (4)
+
+#define SUNXI_GPA1_ERXD2 (2)
+#define SUNXI_GPA1_SPI1_CLK (3)
+#define SUNXI_GPA1_UART2_CTS (4)
+
+#define SUNXI_GPA2_ERXD1 (2)
+#define SUNXI_GPA2_SPI1_MOSI (3)
+#define SUNXI_GPA2_UART2_TX (4)
+
+#define SUNXI_GPA10_UART1_TX (4)
+#define SUNXI_GPA11_UART1_RX (4)
+
+#define SUN4I_GPB22_UART0_TX (2)
+#define SUN4I_GPB23_UART0_RX (2)
+
+#define SUN5I_GPG3_UART0_TX (4)
+#define SUN5I_GPG4_UART0_RX (4)
+
+#define SUNXI_GPC2_NCLE (2)
+#define SUNXI_GPC2_SPI0_CLK (3)
+
+#define SUNXI_GPC6_NRB0 (2)
+#define SUNXI_GPC6_SDC2_CMD (3)
+
+#define SUNXI_GPC7_NRB1 (2)
+#define SUNXI_GPC7_SDC2_CLK (3)
+
+#define SUNXI_GPC8_NDQ0 (2)
+#define SUNXI_GPC8_SDC2_D0 (3)
+
+#define SUNXI_GPC9_NDQ1 (2)
+#define SUNXI_GPC9_SDC2_D1 (3)
+
+#define SUNXI_GPC10_NDQ2 (2)
+#define SUNXI_GPC10_SDC2_D2 (3)
+
+#define SUNXI_GPC11_NDQ3 (2)
+#define SUNXI_GPC11_SDC2_D3 (3)
+
+#define SUNXI_GPF2_SDC0_CLK (2)
+#define SUNXI_GPF2_UART0_TX (4)
+
+#define SUNXI_GPF4_SDC0_D3 (2)
+#define SUNXI_GPF4_UART0_RX (4)
+
 
 #endif

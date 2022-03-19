@@ -18,7 +18,6 @@
 #include <sys/ioctl.h>
 #include <pthread.h>
 #include <poll.h>
-
 #include <stdint.h>
 
 #include "hafnium.h"
@@ -39,7 +38,6 @@ main(int argc, char ** argv, char * envp[])
 
 
 	printf("Hafnium Control Daemon\n");
-
 
 
 	hafnium_fd = open(HAFNIUM_CMD_PATH, O_RDWR);

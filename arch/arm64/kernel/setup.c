@@ -19,6 +19,7 @@
 #include <arch/memblock.h>
 #include <arch/cputype.h>
 
+#include <arch/hafnium/call.h>
 
 /**
  * Bitmap of of PTE/PMD entry flags that are supported.
@@ -244,7 +245,14 @@ u64 __cpu_logical_map[NR_CPUS] = { [0 ... NR_CPUS-1] = INVALID_HWID };
 void __init
 setup_arch(void)
 {
-	phys_addr_t start, end;
+
+        for(int i = 0; i < 100; i++){
+                hf_debug_log('A');
+        }
+
+        printk("SETTING UP ARCHITECTURE\n");
+
+        phys_addr_t start, end;
 	u64 i;
 
 

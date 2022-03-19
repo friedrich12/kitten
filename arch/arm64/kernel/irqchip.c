@@ -61,7 +61,8 @@ irqchip_register(struct irqchip * chip)
 
 int __init
 irqchip_global_init(void)
-{	
+{
+        printk("Setting up interrupt controller\n");
 
 	struct device_node  * dt_node    = NULL;
 	struct of_device_id * matched_np = NULL;
