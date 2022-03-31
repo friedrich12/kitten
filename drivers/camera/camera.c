@@ -30,6 +30,23 @@ int read_image_from_camera(){
 // Configure Channel 0
 int camera_init()
 {
+        /* Print version number */
+        
+        struct csi0_en_reg enable_register = {0};
+        enable_register.val = __csi_read32(CSI0_EN_REG);
+
+        printk("READING VERSION READ ENABLE REGISTER %d\n", enable_register.ver_en);
+
+        enable_register.ver_en = 1;
+        printk("WRITING VERSION READ ENABLE REGISTER\n");
+
+        __csi_write32(CSI0_EN_REG, enable_register.val);
+
+
+
+        struct csi0_ver_reg ver_reg = {0};
+        ver_reg.val = __csi_read32(CSI0_VER_REG);
+        printk("VERSION NUMBER %d", ver_reg.ver);
 
 }
 

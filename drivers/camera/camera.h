@@ -156,7 +156,7 @@ struct csi0_ver_reg {
         union {
                 uint32_t val;
                 struct{
-                        uint32_t ptn_len : 32;
+                        uint32_t ver : 32;
                 };
 
         };
