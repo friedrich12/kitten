@@ -358,7 +358,7 @@ struct csi0_c0_acc_itnl_clk_cnt_reg {
 } __attribute__((packed));
 
 /* CSI Channel 0 FIFO Statistic Register */
-struct csi0_c0_acc_itnl_clk_cnt_reg {
+struct csi0_c0_fifo_stat_reg {
         union {
                 uint32_t val;
                 struct{
