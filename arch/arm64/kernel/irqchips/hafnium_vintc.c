@@ -75,7 +75,7 @@ __hafnium_vintc_ack_irq(void)
 {
    	struct arch_irq irq = {.vector = hf_interrupt_get()};
 
-	printk("Hafnium ACKED IRQ %d\n", irq.vector);
+//	printk("Hafnium ACKED IRQ %d\n", irq.vector);
 
 
 	if (irq.vector == -1) {

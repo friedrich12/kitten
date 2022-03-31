@@ -55,13 +55,20 @@ main(int argc, char ** argv, char * envp[])
 		print("Error launching vm [%d]\n", 3);
 	}*/
 
-    // Let's try saying hello to linux
-    printf("Sending message to Linux\n");
-    ret = ioctl(hafnium_fd, HAFNIUM_IOCTL_ECHO, NULL);
+        // Let's try saying hello to linux
+        
+        printf("Sending message to Linux\n");
+        
+        struct op* x = (struct op*) malloc(sizeof(struct op));
+        x->msg = "This is a test message for the Linux Primary VM";
+        x->msglen = 47;
+        x->vm_id = 1;
 
-    if (ret != 0) {
-        print("Error sending message\n");
-    }
+        ret = ioctl(hafnium_fd, HAFNIUM_IOCTL_SEND_MSG, x);
+
+        if (ret != 0) {
+                print("Error sending message\n");
+        }
 
 	while (1) {
 #if 0

@@ -235,18 +235,18 @@ hf_echo_test()
 		/* Receive the packet. */
 		ret = ffa_msg_wait();
 
-        if(ret.func == FFA_MSG_SEND_32){
-            printk("WE GOT A MESSSAGE OF SIZE %d!\n", ffa_msg_send_size(ret));
+                if(ret.func == FFA_MSG_SEND_32){
+                        printk("WE GOT A MESSSAGE OF SIZE %d!\n", ffa_msg_send_size(ret));
 
-            char* msg = (char*) hf_recv_page;
+                        char* msg = (char*) hf_recv_page;
             
-            for(int i = 0; i < ffa_msg_send_size(ret); i++){
-                printk("%c", msg[i]);
-            }
-            printk("\n");
+                        for(int i = 0; i < ffa_msg_send_size(ret); i++){
+                                printk("%c", msg[i]);
+                        }
+                        printk("\n");
 
-            printk("Kitten Got: %s\n", msg);
-        }
+                        printk("Kitten Got: %s\n", msg);
+                }
 
 		/* Echo the message back to the sender. */
 		memcpy(hf_send_page, hf_recv_page, ffa_msg_send_size(ret));
@@ -274,43 +274,41 @@ hf_echo_test()
  * for reference
  */
 int 
-hf_send_message(char* msg, size_t msglen, ffa_vm_id_t recipient_vm_id)
-{
+hf_send_message(char* msg, size_t msglen, ffa_vm_id_t recipient_vm_id){
+      
+        /* TODO Clean up */
+        ffa_rx_release();
 
-    /* Copy message to send page */
-    memcpy(hf_send_page, msg, msglen);
+        bool done = false;
+        while(!done){
+                struct ffa_value ret;
 
-    /* Transfer ownership from the consumer to producer */
-    ffa_rx_release();
+                /* Receive the packet. */
+                ret = ffa_msg_wait();
 
-    /* Send message to VM 
-     * Transfer ownership form the producer to the consumer*/
-    struct ffa_value ret = ffa_msg_send(current_vm_id, recipient_vm_id, msglen, 0);
+                if(ret.func == FFA_MSG_SEND_32){
+                        printk("WE GOT A MESSSAGE OF SIZE %d!\n", ffa_msg_send_size(ret));
+                        char* msg = (char*) hf_recv_page;
+                        done = true;
+                }
 
-    if (ret.func == FFA_ERROR_32) {
-        switch (ret.arg2) {
-            case FFA_INVALID_PARAMETERS:
-            {
-                printk("KITTEN failed to send message: Invalid parameters.\n");
-                return -1;
-            }
-            case FFA_NOT_SUPPORTED:
-            {
-                printk("KITTEN failed to send message: Not supported.\n");
-                return -1;
-            }
-            case FFA_DENIED:
-            case FFA_BUSY:
-            default:
-            {
-                printk("KITTEN failed to send message: Resource temporarily unavailable."
-                        "Did you run ffa_rx_release()? \n");
-                return -1;
-            }
-      }
-   }
+	        /* Send our message back to the sender. */
+		memcpy(hf_send_page, hf_recv_page, ffa_msg_send_size(ret));
+                memcpy(hf_send_page + sizeof(struct hf_msg_hdr), msg, msglen);
+	        
+                /* Swap the socket's source and destination ports */
+	        struct hf_msg_hdr *hdr = (struct hf_msg_hdr *)hf_send_page;
+	        swap(&(hdr->src_port), &(hdr->dst_port));
 
-    return 0;
+	        /* Swap the destination and source ids. */
+	        ffa_vm_id_t dst_id = ffa_sender(ret);
+	        ffa_vm_id_t src_id = ffa_receiver(ret);
+
+	        ffa_rx_release();
+	        ffa_msg_send(src_id, dst_id, msglen, 0);
+        }
+
+        return 0;
 }
 
 /*

@@ -14,4 +14,4 @@ obj-$(CONFIG_OF) += of/
  
 obj-$(CONFIG_RCR) += rcr/
 
-obj-$(CONFIG_ARM64) += firmware/ gpio/ i2c/
+obj-$(CONFIG_ARM64) += firmware/ gpio/ #i2c/

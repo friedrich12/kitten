@@ -341,7 +341,7 @@ __hafnium_ioctl(struct file   * filp,
     void __user * argp = (void __user *)arg;
     int ret = 0;
 
-    printk("Hafnium IOCTL: %d\n", ioctl);
+ //   printk("Hafnium IOCTL: %d\n", ioctl);
 
     struct op* op = (struct op*)arg;
 
@@ -349,9 +349,9 @@ __hafnium_ioctl(struct file   * filp,
         case HAFNIUM_IOCTL_HYP_INIT:
         {
             ret = __init_hypervisor();
-            for(;;){
-                hf_debug_log('a');
-            }
+            //for(;;){
+            //    hf_debug_log('a');
+            //}
             break;
         }
         case HAFNIUM_IOCTL_LAUNCH_VM: 
@@ -370,7 +370,7 @@ __hafnium_ioctl(struct file   * filp,
         }
         case HAFNIUM_IOCTL_SEND_MSG:
         {
-            printk("Sending message to VM.\n");
+//            printk("Sending message to VM.\n");
             ret = hf_send_message(op->msg, op->msglen, op->vm_id);
             break;
         }
