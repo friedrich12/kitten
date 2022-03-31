@@ -1,4 +1,6 @@
-// Copyright (c) Friedrich Doku 2022
+/* 
+ * 2022, Friedrich Doku <frd20@pitt.edu>
+ */
 #ifndef CAMERA_H
 #define CAMERA_H
 
@@ -55,7 +57,7 @@ struct csi0_en_reg {
                         uint32_t res1 : 7;
                         uint32_t ptn_cycle : 8;
                         uint32_t res2 : 6;
-                        uint32_t ver_en : 1;
+                        uint32_t ver_en : 1; /* Turn this on to read Version Number */
                         uint32_t res3 : 1;
                 };
 
