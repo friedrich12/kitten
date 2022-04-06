@@ -1,3 +1,6 @@
+/* 
+ * 2022, Friedrich Doku <frd20@pitt.edu>
+ */
 #include "gpio.h"
 
 #define mmio_read32(offset)         *((volatile uint32_t *)(ahci_dev.bar_vaddr + (offset)))
@@ -14,39 +17,39 @@ int sunxi_gpio_set_cfgpin(unsigned int pin, unsigned int val)
 	unsigned int index	= GPIO_CFG_INDEX(pin);
 	unsigned int offset = GPIO_CFG_OFFSET(pin);
 
-        printk(" I GOT HERE 1 \n");
+//        printk(" I GOT HERE 1 \n");
 	if (SUNXI_PIO_BASE == 0) {
 		return -1;
 	}
 
-        printk(" I GOT HERE 2 \n");
+  //      printk(" I GOT HERE 2 \n");
 	struct sunxi_gpio * pio =
 		&((struct sunxi_gpio_reg *)SUNXI_PIO_BASE)->gpio_bank[bank];
 
 
-        printk(" I GOT HERE 3 \n");
+    //    printk(" I GOT HERE 3 \n");
 	spin_lock_irqsave(&lock, flags);
         {
 
-                printk(" I GOT HERE 4 \n");
+      //          printk(" I GOT HERE 4 \n");
                 cfg = *(&pio->cfg[0] + index);
 
-                printk(" I GOT HERE 5 \n");
+        //        printk(" I GOT HERE 5 \n");
 	        cfg &= ~(0xf << offset);
 	        cfg |= val << offset;
 
 
-                printk(" I GOT HERE 6 \n");
+          //      printk(" I GOT HERE 6 \n");
                 *(&pio->cfg[0] + index) = cfg;
 	        //writel((phys_addr_t) cfg, (phys_addr_t) (&pio->cfg[0] + index) );
 
 
-                printk(" I GOT HERE 7 \n");
+            //    printk(" I GOT HERE 7 \n");
         }
         spin_unlock_irqrestore(&lock, flags);
 
 
-        printk(" I GOT HERE 8 \n");
+        //printk(" I GOT HERE 8 \n");
 
 	return 0;
 }

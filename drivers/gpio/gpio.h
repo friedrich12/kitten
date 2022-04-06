@@ -1,7 +1,9 @@
+/* 
+ * 2022, Friedrich Doku <frd20@pitt.edu>
+ */
 #ifndef GPIO_H
 #define GPIO_H
 
-#include "bitops.h"
 #include <lwk/driver.h>
 #include <lwk/pci/pci.h>
 #include <lwk/interrupt.h>

@@ -5,6 +5,25 @@
 #define CAMERA_H
 
 #include <lwk/types.h>
+#include <lwk/driver.h>
+#include <lwk/pci/pci.h>
+#include <lwk/interrupt.h>
+#include <arch/fixmap.h>
+#include <arch/io.h>
+#include <lwk/blkdev.h>
+#include <lwk/delay.h>
+#include <lwk/spinlock.h>
+#include "../gpio/gpio.h"
+
+//define the voltage level of control signal
+#define CSI_STBY_ON  0
+#define CSI_STBY_OFF 1
+#define CSI_RST_ON   0
+#define CSI_RST_OFF  1
+#define CSI_PWR_ON   1
+#define CSI_PWR_OFF  0
+#define CSI_AF_PWR_ON   0
+#define CSI_AF_PWR_OFF 1
 
 #define CSI_BASE_ADDRESS 0x01CB0000             // Camera base address
 
@@ -41,6 +60,17 @@
 #define CCI_LC_TRIG 0x3018                      // CCI line counter trigger register
 #define CCI_FIFO_ACC 0x3100                     // CCI FIFO access register
 #define CCI_RSV_REG 0x3200                      // CCI reserved register
+
+/* CCU Register */
+#define CCU_BASE_ADDRESS 0x01C20000
+#define CCU_LEN 0x324
+#define PLL_PERIPH0_CTRL_REG 0x28
+#define PLL_PERIPH1_CTRL_REG 0x2C
+#define BUS_CLK_GATING_REG1 0x64 
+#define CSI_MISC_CLK_REG 0x130
+#define CSI_CLK_REG 0x134
+#define BUS_SOFT_RST_REG1 0x2C4
+
 
 /* CSI Enable Register */
 struct csi0_en_reg {
@@ -79,7 +109,7 @@ struct csi0_if_cfg_reg {
                         uint32_t verf_pol : 1;
                         uint32_t field : 1;
                         uint32_t fps_ds : 1;
-                        uint32_t src_type 1;
+                        uint32_t src_type : 1;
                         uint32_t res2 : 10;
                 };
 
