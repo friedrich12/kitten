@@ -15,6 +15,34 @@
 #include <lwk/spinlock.h>
 #include "../gpio/gpio.h"
 
+struct csi {
+	vaddr_t csi_virt_start;
+	paddr_t csi_phys_start;
+	paddr_t csi_phys_size;
+};
+
+struct ccu {
+	vaddr_t ccu_virt_start;
+	paddr_t ccu_phys_start;
+	paddr_t ccu_phys_size;
+};
+
+struct dma_buffer {
+        paddr_t fifo0_phys_start;
+        paddr_t fifo1_phys_start;
+        paddr_t fifo2_phys_start;
+        
+        paddr_t fifo0_dma_start;
+        paddr_t fifo1_dma_start;
+        paddr_t fifo2_dma_start;
+
+        vaddr_t fifo0_virt_start;
+        vaddr_t fifo1_virt_start;
+        vaddr_t fifo2_virt_start;
+        
+        paddr_t fifo_size;
+};
+
 
 #define __csi_read32(offset) *((uint32_t *)(csi.csi_virt_start + offset))
 #define __csi_write32(offset, value) *((uint32_t *)(csi.csi_virt_start + offset)) = value
@@ -490,7 +518,7 @@ struct cci_fmt_reg {
 } __attribute__((packed));
 
 /* CCI Bus Control Register */
-struct cci_bus_reg {
+struct cci_bus_ctrl_reg {
 	union {
 		uint32_t val;
 		struct {
@@ -516,7 +544,7 @@ struct cci_int_ctrl_reg {
 		uint32_t val;
 		struct {
 			uint32_t s_tran_com_pd : 1;
-			uint32_t s_tran_err_pdf : 1;
+			uint32_t s_tran_err_pd : 1;
 			uint32_t res0 : 14;
 			uint32_t s_tran_com_int_en : 1;
 			uint32_t s_tran_err_int_en : 1;

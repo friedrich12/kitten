@@ -1,7 +1,7 @@
 	.arch armv8.3-a+crc
 	.file	"asm-offsets.c"
-// GNU C99 (Ubuntu 9.3.0-17ubuntu1~20.04) version 9.3.0 (aarch64-linux-gnu)
-//	compiled by GNU C version 9.3.0, GMP version 6.2.0, MPFR version 4.0.2, MPC version 1.1.0, isl version isl-0.22.1-GMP
+// GNU C99 (Ubuntu 9.4.0-1ubuntu1~20.04.1) version 9.4.0 (aarch64-linux-gnu)
+//	compiled by GNU C version 9.4.0, GMP version 6.2.0, MPFR version 4.0.2, MPC version 1.1.0, isl version isl-0.22.1-GMP
 
 // GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
 // options passed:  -nostdinc -I include -I ofed/include
@@ -2933,10 +2933,6 @@ main:
 	.string	"sigset_t"
 .LASF140:
 	.string	"taskstate_t"
-.LASF149:
-	.ascii	"GNU C99 9.3.0 -march=armv8.3-a -mlittle-endian -mabi=lp64 -g"
-	.ascii	" -g -O2 -std=gnu99 -fno-strict-aliasi"
-	.string	"ng -fno-strict-overflow -fno-common -fno-pie -fno-stack-protector -fgnu89-inline -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-builtin -ffunction-sections -fno-reorder-blocks -funit-at-a-time -fasynchronous-unwind-tables -fstack-clash-protection"
 .LASF94:
 	.string	"per_cpu__umem_only"
 .LASF8:
@@ -3013,6 +3009,10 @@ main:
 	.string	"bootstrap_task_union"
 .LASF106:
 	.string	"BOOT_ACPI"
+.LASF149:
+	.ascii	"GNU C99 9.4.0 -march=armv8.3-a -mlittle-endian -mabi=lp64 -g"
+	.ascii	" -g -O2 -std=gnu99 -fno-strict-aliasi"
+	.string	"ng -fno-strict-overflow -fno-common -fno-pie -fno-stack-protector -fgnu89-inline -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-builtin -ffunction-sections -fno-reorder-blocks -funit-at-a-time -fasynchronous-unwind-tables -fstack-clash-protection"
 .LASF47:
 	.string	"oldsp"
 .LASF107:
@@ -3043,5 +3043,5 @@ main:
 	.string	"tp_value"
 .LASF40:
 	.string	"swapper_pg_dir"
-	.ident	"GCC: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0"
+	.ident	"GCC: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0"
 	.section	.note.GNU-stack,"",@progbits

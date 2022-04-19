@@ -1,1 +1,1 @@
-obj-y += camera.o
+obj-y += camera.o cci.o

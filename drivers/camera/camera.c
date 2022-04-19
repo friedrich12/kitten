@@ -16,37 +16,9 @@ static uint64_t				buf_addr_plane0[MAX_CH_NUM];
 static uint64_t				buf_addr_plane1[MAX_CH_NUM];
 static uint64_t				buf_addr_plane2[MAX_CH_NUM];
 
-struct csi {
-	vaddr_t csi_virt_start;
-	paddr_t csi_phys_start;
-	paddr_t csi_phys_size;
-};
-
-struct ccu {
-	vaddr_t ccu_virt_start;
-	paddr_t ccu_phys_start;
-	paddr_t ccu_phys_size;
-};
-
-struct dma_buffer {
-        paddr_t fifo0_phys_start;
-        paddr_t fifo1_phys_start;
-        paddr_t fifo2_phys_start;
-        
-        paddr_t fifo0_dma_start;
-        paddr_t fifo1_dma_start;
-        paddr_t fifo2_dma_start;
-
-        vaddr_t fifo0_virt_start;
-        vaddr_t fifo1_virt_start;
-        vaddr_t fifo2_virt_start;
-        
-        paddr_t fifo_size;
-};
-
-static struct csi csi;
-static struct ccu ccu;
-static struct dma_buffer dma;
+struct csi csi;
+struct ccu ccu;
+struct dma_buffer dma;
 
 static inline uint32_t
 __csiX_read32(uintptr_t offset)
