@@ -28,19 +28,19 @@ struct ccu {
 };
 
 struct dma_buffer {
-        paddr_t fifo0_phys_start;
-        paddr_t fifo1_phys_start;
-        paddr_t fifo2_phys_start;
-        
-        paddr_t fifo0_dma_start;
-        paddr_t fifo1_dma_start;
-        paddr_t fifo2_dma_start;
+	paddr_t fifo0_phys_start;
+	paddr_t fifo1_phys_start;
+	paddr_t fifo2_phys_start;
 
-        vaddr_t fifo0_virt_start;
-        vaddr_t fifo1_virt_start;
-        vaddr_t fifo2_virt_start;
-        
-        paddr_t fifo_size;
+	paddr_t fifo0_dma_start;
+	paddr_t fifo1_dma_start;
+	paddr_t fifo2_dma_start;
+
+	vaddr_t fifo0_virt_start;
+	vaddr_t fifo1_virt_start;
+	vaddr_t fifo2_virt_start;
+
+	paddr_t fifo_size;
 };
 
 
