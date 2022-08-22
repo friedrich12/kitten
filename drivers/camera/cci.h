@@ -122,4 +122,32 @@ struct cci_msg {
 	unsigned char	   pkt_num;
 };
 
+void dumb_udelay(int n);
+
+void cci_cal_div(unsigned int clk, unsigned char * div_coef);
+
+void bsp_csi_cci_init_helper();
+
+void bsp_csi_cci_init();
+
+void bsp_csi_cci_exit();
+
+void bsp_cci_set_tx_mode(struct cci_tx_mode * tx_mode);
+
+void bsp_cci_tx_start(struct cci_msg * msg);
+
+void bsp_cci_tx_data_rb(struct cci_msg * msg);
+
+void bsp_cci_error_process();
+
+int bsp_cci_tx_start_wait(struct cci_msg * msg);
+
+void bsp_cci_bus_error_process();
+
+int cci_wr_16_16(unsigned short reg, unsigned short data); //, unsigned char slv)
+
+int sensor_write(unsigned short reg, unsigned short value);
+
+int sensor_write_array(struct regval_list * regs, int array_size);
+
 #endif

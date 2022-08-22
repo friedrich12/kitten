@@ -33,10 +33,12 @@ csi_cci_reset()
 {
 	/* CCI soft reset */
 	struct cci_ctrl_reg reg = {0};
-	reg.val					= __csi_read32(CCI_CTRL);
+
+    reg.val					= __csi_read32(CCI_CTRL);
 	reg.soft_reset			= 1;
 	__csi_write32(CCI_CTRL, reg.val);
 
+	reg.val					= __csi_read32(CCI_CTRL);
 	reg.soft_reset = 0;
 	__csi_write32(CCI_CTRL, reg.val);
 }
@@ -128,6 +130,7 @@ csi_cci_get_trans_done()
 {
 	struct cci_ctrl_reg reg = {0};
 	reg.val					= __csi_read32(CCI_CTRL);
+    printk("SINGLE TRANS = %d", reg.single_tran);
 	return !(reg.single_tran == 0);
 }
 
@@ -161,12 +164,12 @@ csi_cci_set_bus_fmt(struct cci_bus_fmt * bus_fmt)
 	}
 
 	struct cci_fmt_reg reg = {0};
-	reg.val				   = __csi_read32(CCI_CTRL);
+	reg.val				   = __csi_read32(CCI_FMT);
 	reg.slv_id			   = bus_fmt->saddr_7bit;
 	reg.cmd				   = bus_fmt->wr_flag;
 	reg.addr_byte		   = bus_fmt->addr_len;
 	reg.data_byte		   = bus_fmt->data_len;
-	__csi_write32(CCI_CTRL, reg.val);
+	__csi_write32(CCI_FMT, reg.val);
 }
 
 void
@@ -201,7 +204,7 @@ csi_cci_fifo_pt_sub(unsigned int byte_cnt)
 	fifo_last_pt -= byte_cnt;
 }
 
-static void
+void
 cci_wr_tx_buf(unsigned int byte_index, unsigned char value)
 {
 	unsigned int index_remain, index_dw_align, tmp;
@@ -217,7 +220,7 @@ cci_wr_tx_buf(unsigned int byte_index, unsigned char value)
 	__csi_write32(CCI_FIFO_ACC + 4 * index_dw_align, reg.val);
 }
 
-static void
+void
 cci_rd_tx_buf(unsigned int byte_index, unsigned char * value)
 {
 	unsigned int index_remain, index_dw_align, tmp;
@@ -310,8 +313,10 @@ enum cci_bus_status
 	CCI_INLINE_FUNC
 	cci_get_bus_status()
 {
-	struct cci_ctrl_reg reg = {0};
+    struct cci_ctrl_reg reg = {0};
 	reg.val					= __csi_read32(CCI_CTRL);
+    
+    printk("CCI BUS STATUS 0x%x\n", reg.cci_sta);
 	return reg.cci_sta;
 }
 

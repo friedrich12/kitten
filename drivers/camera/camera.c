@@ -3,6 +3,8 @@
  */
 
 #include "camera.h"
+#include "cam_def.h"
+#include "cci.h"
 
 static struct frame_arrange frm_arrange_gbl;
 static unsigned int			line_stride_y_ch_gbl[MAX_CH_NUM];
@@ -59,7 +61,7 @@ uint32_t csi_get_buffer_address();
 
 
 int
-camera_power_on()
+sensor_power_on()
 {
 	printk("CAMERA POWER ON\n");
 	/* Set gpios to poewr on*/
@@ -83,9 +85,9 @@ camera_power_on()
 	printk("CAMERA POWER ON DONE\n");
 }
 
-int
-camera_init()
-{
+
+void
+camera_sensor_init(){
 	uint32_t reg = 0;
 
 	csi.csi_phys_start = CSI_BASE_ADDRESS;
@@ -102,9 +104,8 @@ camera_init()
 
 	printk("ccu base: vaddr=%p\n", ccu.ccu_virt_start);
 	printk("ccu base: paddr=%p\n", virt_to_phys(ccu.ccu_virt_start));
-
-
-	/* Enable PLL and enable clock output */
+	
+    /* Enable PLL and enable clock output */
 	reg = __ccu_read32(PLL_PERIPH0_CTRL_REG);
 	__ccu_write32(PLL_PERIPH0_CTRL_REG, reg | 1 << 18 | 1 << 24);
 	printk("PLL PER0: %x\n", __ccu_read32(PLL_PERIPH0_CTRL_REG));
@@ -130,51 +131,21 @@ camera_init()
 	__ccu_write32(CSI_CLK_REG, (1 << 31 | 1 << 15 | 1 << 9));
 	printk("CSI CLK: %x\n", __ccu_read32(CSI_CLK_REG));
 
+    /*TODO: Figure out how to turn on the sensor*/
+    //sensor_power_on();
 
-	/*struct cci_tx_mode tx_mode;
->       bsp_csi_cci_init(sel);
->       tx_mode.tx_buf_mode.buf_src = FIFO;
->       tx_mode.tx_buf_mode.pkt_mode = COMPACT;
->       tx_mode.tx_buf_mode.pkt_cnt = 1;
->       tx_mode.tx_trig_mode.trig_src = NO_TRIG;
->       tx_mode.tx_trig_mode.trig_con = TRIG_DEFAULT;
->       tx_mode.tx_trig_line_cnt = 0;
->       bsp_cci_set_tx_mode(sel, &tx_mode);
->       bsp_cci_int_clear_status(sel, CCI_INT_ALL);
->       bsp_cci_int_enable(sel, CCI_INT_ALL);
-*/
-	/* Enable The Camera Device */
-	struct csi0_en_reg ceg = {0};
-	ceg.csi_en			   = 1;
-	ceg.ver_en			   = 1;
-	__csi_write32(CSI0_EN_REG, ceg.val);
-	printk("CSI EN: %x\n", __csi_read32(CSI0_EN_REG));
+    bsp_csi_cci_init_helper();
 
-
-	/* struct cci_cfg_reg cci_reg = {0};
-        cci_reg.timeout_h = 0x10;
-        cci_reg.interval = 0;
-        cci_reg.packet_mode = 0;
-        cci_reg.trig_mode = 2;
-        cci_reg.csi_trig = 0;
-        __csi_write32(CCI_CFG, cci_reg.val);*/
-
-	struct cci_ctrl_reg cci_reg2 = {0};
-	cci_reg2.cci_en				 = 1;
-	__csi_write32(CCI_CTRL, cci_reg2.val);
-
-	printk("CCI_CTRL: %x\n", __csi_read32(CCI_CTRL));
-
-	dump_all_registers();
-	//csi_set_fmt();
-	//csi_int_enable();
+    int size = sizeof(sensor_default_regs)/sizeof(sensor_default_regs[0]);
+    sensor_write_array(sensor_default_regs, size);
+	
+    csi_set_fmt();
+	csi_int_enable();
 	csi_capture_start();
 
 	for (;;) {
 		csi_int_status();
 	}
-
-	return 0;
 }
 
 
@@ -441,4 +412,4 @@ dump_all_registers()
 	printk("VERSION REGISTER %x\n", reg);
 }
 
-DRIVER_INIT("late", camera_init);
+DRIVER_INIT("late", camera_sensor_init);
