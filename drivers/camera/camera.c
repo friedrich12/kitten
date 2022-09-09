@@ -72,11 +72,12 @@ sensor_power_on()
 	sunxi_gpio_output(PWDN, CSI_STBY_ON);
 	/* Reset on io */
 	sunxi_gpio_output(RESET, CSI_RST_ON);
-	/* power on reset */
+	
+    int N = 12000;
+	while (N--);
+	
+        /* power on reset */
 	sunxi_gpio_output(PWDN, CSI_STBY_OFF);
-	int N = 12000;
-	while (N--)
-		;
 	sunxi_gpio_output(RESET, CSI_RST_OFF);
 	int B = 12000;
 	while (B--)
@@ -134,10 +135,14 @@ camera_sensor_init(){
     /*TODO: Figure out how to turn on the sensor*/
     //sensor_power_on();
 
+    sensor_power_on();
+    
     bsp_csi_cci_init_helper();
+    sensor_detect();
+    
 
     int size = sizeof(sensor_default_regs)/sizeof(sensor_default_regs[0]);
-    sensor_write_array(sensor_default_regs, size);
+    //sensor_write_array(sensor_default_regs, size);
 	
     csi_set_fmt();
 	csi_int_enable();
