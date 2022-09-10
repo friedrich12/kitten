@@ -8,8 +8,15 @@ unsigned int fifo_last_pt;
 
 extern struct csi csi;
 
-#define csi_cci_udelay(x) udelay(x)
+#define csi_cci_udelay(x) friedy_udelay(x)
 
+void
+friedy_udelay(uint64_t s){
+    uint64_t i = 0;
+    while(i < (s * 1000)){
+            i++;
+    }
+}
 inline
 uint32_t vfe_reg_readl(volatile void* addr)
 {
